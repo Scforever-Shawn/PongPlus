@@ -1,0 +1,63 @@
+[gd_scene load_steps=5 format=3 uid="uid://djeb0cuoeaeet"]
+
+[ext_resource type="Script" path="res://main.gd" id="1_xxx"]
+[ext_resource type="PackedScene" uid="uid://paddle_scene" path="res://paddle.tscn" id="2_yyy"]
+[ext_resource type="PackedScene" uid="uid://ball_scene" path="res://ball.tscn" id="3_zzz"]
+
+[sub_resource type="Environment" id="Environment_glow"]
+background_mode = 3
+glow_enabled = true
+glow_intensity = 1.5
+glow_bloom = 0.2
+glow_blend_mode = 0
+glow_hdr_threshold = 1.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
+size = Vector2(1200, 20)
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_xxx")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_glow")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(576, 324)
+
+[node name="PaddleP1" parent="." instance=ExtResource("2_yyy")]
+position = Vector2(50, 324)
+
+[node name="PaddleP2" parent="." instance=ExtResource("2_yyy")]
+position = Vector2(1102, 324)
+is_player_2 = true
+is_ai = true
+
+[node name="Ball" parent="." instance=ExtResource("3_zzz")]
+position = Vector2(576, 324)
+
+[node name="TopWall" type="StaticBody2D" parent="."]
+position = Vector2(576, -10)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="TopWall"]
+shape = SubResource("RectangleShape2D_wall")
+
+[node name="BottomWall" type="StaticBody2D" parent="."]
+position = Vector2(576, 658)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BottomWall"]
+shape = SubResource("RectangleShape2D_wall")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="ScoreLabel" type="Label" parent="CanvasLayer"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_top = 20.0
+offset_right = 20.0
+offset_bottom = 43.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 64
+text = "0 : 0"
+horizontal_alignment = 1
