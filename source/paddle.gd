@@ -8,6 +8,11 @@ const SPEED = 400.0
 @export var ai_speed_multiplier: float = 0.8
 
 var ball_node: Node2D = null
+var input_enabled: bool = true
+var network_replica: bool = false
+var network_direction: float = 0.0
+var network_parry_requested: bool = false
+var network_target_y: float = 0.0
 
 # Parry Mechanics
 var parry_timer: float = 0.0
@@ -19,6 +24,7 @@ var start_x: float = 0.0
 
 func _ready():
 	start_x = global_position.x
+	network_target_y = global_position.y
 	if is_ai:
 		ball_node = get_tree().get_first_node_in_group("ball")
 	if color_rect:
@@ -42,8 +48,13 @@ func reset_paddle():
 		color_rect.color = original_color
 
 func _physics_process(delta):
+	if network_replica:
+		global_position.x = start_x
+		global_position.y = lerp(global_position.y, network_target_y, 0.45)
+		return
+
 	var direction = 0.0
-	
+
 	# Parry timer countdown
 	if parry_timer > 0.0:
 		parry_timer -= delta
@@ -51,14 +62,27 @@ func _physics_process(delta):
 			if color_rect:
 				color_rect.color = original_color
 
-	
-	if is_ai and ball_node:
-		# Simple AI tracking
-		var diff = ball_node.global_position.y - global_position.y
-		if abs(diff) > 10:
-			direction = sign(diff) * ai_speed_multiplier
+	if not input_enabled:
+		velocity = Vector2.ZERO
+		return
+
+	if is_ai:
+		if ball_node == null:
+			ball_node = get_tree().get_first_node_in_group("ball")
+		if ball_node:
+			# Simple AI tracking
+			var diff = ball_node.global_position.y - global_position.y
+			if abs(diff) > 10:
+				direction = sign(diff) * ai_speed_multiplier
+	elif is_player_2 and get_tree().current_scene.has_method("is_host") and get_tree().current_scene.is_host():
+		# In network host mode P2 is driven by the remote client.
+		direction = network_direction
+		if network_parry_requested:
+			network_parry_requested = false
+			if parry_timer <= 0.0:
+				activate_parry()
 	else:
-		# Player Input
+		# Local player input
 		if is_player_2:
 			if Input.is_action_pressed("p2_up"):
 				direction -= 1
@@ -76,10 +100,27 @@ func _physics_process(delta):
 
 	velocity.y = direction * SPEED
 	move_and_slide()
-	
+
 	# Clamp position to screen bounds and lock X axis to prevent physics pushing
 	global_position.x = start_x
 	global_position.y = clamp(global_position.y, 60, get_viewport_rect().size.y - 60)
+
+func set_network_input(direction: float):
+	network_direction = direction
+
+func request_network_parry():
+	network_parry_requested = true
+
+func apply_network_state(target_y: float, parrying: bool, scale_y: float):
+	network_target_y = target_y
+	scale.y = scale_y
+	if color_rect:
+		if parrying:
+			color_rect.color = Color(0.5, 0.8, 2.0, 1)
+		elif scale_y < 0.75:
+			color_rect.color = Color.RED
+		else:
+			color_rect.color = original_color
 
 func activate_parry():
 	parry_timer = parry_duration
