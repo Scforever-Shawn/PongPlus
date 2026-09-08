@@ -59,11 +59,11 @@ func _physics_process(delta):
         var collider = collision.get_collider()
 
         if collider is Paddle:
-            # Check parry interaction
-            var relative_y = (global_position.y - collider.global_position.y) / 50.0
-            var new_dir_x = sign(global_position.x - collider.global_position.x)
-            if new_dir_x == 0:
-                new_dir_x = -sign(direction.x)
+            # Always send the ball back toward the play field based on which
+            # paddle was hit. Deriving X from the post-collision positions can
+            # point the ball back into a paddle when it clips a top/bottom edge.
+            var relative_y = clamp((global_position.y - collider.global_position.y) / 50.0, -1.0, 1.0)
+            var new_dir_x = -1.0 if collider.is_player_2 else 1.0
 
             if collider.is_parrying():
                 # Perfect parry!
@@ -92,6 +92,10 @@ func _physics_process(delta):
                     speed += 25.0
 
             direction = Vector2(new_dir_x, relative_y).normalized()
+            # move_and_collide() stops at contact. Nudge the ball toward the
+            # field so a moving paddle cannot leave it touching the same edge
+            # and trigger the same collision again on the next physics frame.
+            global_position.x += new_dir_x * 2.0
         else:
             # Hit wall
             AudioManager.play_sound("hit")
