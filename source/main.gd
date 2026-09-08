@@ -187,7 +187,7 @@ func _start_host():
     paddle_p1.input_enabled = true
     paddle_p1.network_replica = false
     paddle_p2.is_ai = false
-    paddle_p2.input_enabled = false
+    paddle_p2.input_enabled = true
     paddle_p2.network_replica = false
     ball.network_replica = false
     ball.simulation_enabled = false
@@ -230,6 +230,7 @@ func _on_peer_connected(peer_id: int):
 func _on_peer_disconnected(peer_id: int):
     if game_mode == GameMode.HOST and peer_id != 1:
         ball.simulation_enabled = false
+        paddle_p2.set_network_input(0.0)
         status_label.text = "对方已断开，等待重新连接…"
         menu_layer.visible = true
 
